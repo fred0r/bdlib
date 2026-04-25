@@ -118,8 +118,8 @@ class String : public ReferenceCountedArray<String_Array_Type> {
 
         String(const char* cstring, size_t slen) :
           ReferenceCountedArray<String_Array_Type, Allocator>(slen+1) {
-          // Guard against invalid length (overflow, NULL, or excessive size)
-          if (cstring == nullptr || slen > MAX_STRING_LEN) {
+          // Guard against invalid length (overflow, NULL, SIZE_MAX, or excessive size)
+          if (cstring == nullptr || slen == 0 || slen > MAX_STRING_LEN || slen > (size_t)(16*1024*1024)) {
             slen = 0;
           }
           if (slen > 0) {
