@@ -114,9 +114,17 @@ class String : public ReferenceCountedArray<String_Array_Type> {
 	 * @post The buffer has been filled with the string (up to len characters).
 	 * @test String test("Some string");
          */
+        static constexpr size_t MAX_STRING_LEN = 16 * 1024 * 1024;  // 16MB max
+
         String(const char* cstring, size_t slen) :
           ReferenceCountedArray<String_Array_Type, Allocator>(slen+1) {
-          ::memcpy(Buf(), cstring, slen);
+          // Guard against invalid length (overflow, NULL, or excessive size)
+          if (cstring == nullptr || slen > MAX_STRING_LEN) {
+            slen = 0;
+          }
+          if (slen > 0) {
+            ::memcpy(Buf(), cstring, slen);
+          }
           *(Buf(slen)) = '\0';
           sublen = slen;
         };
