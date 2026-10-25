@@ -1201,6 +1201,14 @@ void StringTest :: printfTest(void)
   CPPUNIT_ASSERT_STRING_EQUAL("something 506", *a);
 
   CPPUNIT_ASSERT_STRING_EQUAL("506 something 506", String::printf("%d %s %d", n, s, n));
+
+  const size_t lengths[] = {511, 512, 4095, 4096, 4097, 8192};
+  for (size_t len : lengths) {
+    std::string input(len, 'x');
+    String result = String::printf("%s", input.c_str());
+    CPPUNIT_ASSERT_EQUAL(len, result.length());
+    CPPUNIT_ASSERT_EQUAL(0, std::memcmp(result.c_str(), input.data(), len));
+  }
 }
 
 /*

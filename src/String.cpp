@@ -30,6 +30,7 @@
 #include "HashTable.h"
 #include <cstdarg>
 #include <cstdio>
+#include <vector>
 #include "base64.h"
 //#include <memory>
 //#include <iostream>
@@ -243,14 +244,33 @@ String String::operator*(int times) const {
 }
 
 String String::printf(const char* format, ...) {
-  char va_out[4096] = "";
-  va_list va;
+  char va_out[512] = "";
+  va_list va, vacopy;
+  int len = 0;
 
   va_start(va, format);
-  const auto len = vsnprintf(va_out, sizeof(va_out), format, va);
+  va_copy(vacopy, va);
+  len = vsnprintf(va_out, sizeof(va_out), format, va);
   va_end(va);
 
-  return String(va_out, len);
+  if (len < 0) {
+    va_end(vacopy);
+    return String();
+  }
+
+  if (static_cast<size_t>(len) < sizeof(va_out)) {
+    va_end(vacopy);
+    return String(va_out, static_cast<size_t>(len));
+  }
+
+  std::vector<char> buf(static_cast<size_t>(len) + 1);
+  const int written = vsnprintf(buf.data(), buf.size(), format, vacopy);
+  va_end(vacopy);
+
+  if (written < 0 || written != len)
+    return String();
+
+  return String(buf.data(), static_cast<size_t>(written));
 }
 
 String& String::chomp() noexcept {
