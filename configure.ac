@@ -140,10 +140,6 @@ AC_FUNC_MMAP
 
 AC_CHECK_FUNCS([memmem select])
 
-SCRIPT_TCL
-
-AH_BOTTOM([#include "config-sanity.h"])
-
 AC_CONFIG_FILES([
 	Makefile 
 ])

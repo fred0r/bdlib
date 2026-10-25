@@ -877,26 +877,26 @@ void StringTest :: rifindTest(void)
 void StringTest :: rfindTest(void)
 {
 
-  *a = "Filename.tcl";
+  *a = "Filename.txt";
   CPPUNIT_ASSERT_EQUAL((size_t)a->length() - 1, a->rfind(""));
   CPPUNIT_ASSERT_EQUAL((size_t)7, a->rfind('e'));//Tests ReferenceCountedArray<char>::rfind
   CPPUNIT_ASSERT_EQUAL((size_t)7, a->rfind("e"));//Tests String::rfind(String)
   CPPUNIT_ASSERT_EQUAL((size_t)8, a->rfind('.'));
-  CPPUNIT_ASSERT_EQUAL((size_t)9, a->rfind('t'));
-  CPPUNIT_ASSERT_EQUAL((size_t)10, a->rfind('c'));
-  CPPUNIT_ASSERT_EQUAL((size_t)11, a->rfind('l'));
-  CPPUNIT_ASSERT_EQUAL((size_t)9, a->rfind("tcl"));
-  CPPUNIT_ASSERT_EQUAL((size_t)8, a->rfind(".tcl"));
+  CPPUNIT_ASSERT_EQUAL((size_t)11, a->rfind('t'));
+  CPPUNIT_ASSERT_EQUAL((size_t)10, a->rfind('x'));
+  CPPUNIT_ASSERT_EQUAL((size_t)1, a->rfind('i'));
+  CPPUNIT_ASSERT_EQUAL((size_t)9, a->rfind("txt"));
+  CPPUNIT_ASSERT_EQUAL((size_t)8, a->rfind(".txt"));
   CPPUNIT_ASSERT_EQUAL((size_t)0, a->rfind("File"));
-  CPPUNIT_ASSERT_EQUAL((size_t)0, a->rfind("Filename.tcl"));
+  CPPUNIT_ASSERT_EQUAL((size_t)0, a->rfind("Filename.txt"));
 
   CPPUNIT_ASSERT_EQUAL(String::npos, a->rfind("z"));
-  CPPUNIT_ASSERT_EQUAL(String::npos, a->rfind("Filename.tclBLA"));
-  CPPUNIT_ASSERT_EQUAL(String::npos, a->rfind("Filename.tck"));
+  CPPUNIT_ASSERT_EQUAL(String::npos, a->rfind("Filename.txtBLA"));
+  CPPUNIT_ASSERT_EQUAL(String::npos, a->rfind("Filename.txx"));
 
-  CPPUNIT_ASSERT_EQUAL((size_t)8, a->rfind(".tcl", a->length() - 4));
-  *a = "test.tcl.rb";
-  CPPUNIT_ASSERT_EQUAL(String::npos, a->rfind(".tcl", a->length() - 4));
+  CPPUNIT_ASSERT_EQUAL((size_t)8, a->rfind(".txt", a->length() - 4));
+  *a = "test.txt.rb";
+  CPPUNIT_ASSERT_EQUAL(String::npos, a->rfind(".txt", a->length() - 4));
 }
 
 void StringTest :: newsplitTest(void)

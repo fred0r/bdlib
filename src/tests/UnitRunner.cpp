@@ -35,9 +35,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#ifdef USE_SCRIPT_TCL
-#include <tcl.h>
-#endif
 
 int main (int argc, char* argv[])
 {
@@ -65,11 +62,6 @@ int main (int argc, char* argv[])
 
     // return 0 if tests were successful
     int ret = collectedresults.wasSuccessful() ? 0 : 1;
-
-#ifdef USE_SCRIPT_TCL
-    /* Avoid valgrind memory leaks. */
-    Tcl_Finalize();
-#endif
 
     return ret;
 }
