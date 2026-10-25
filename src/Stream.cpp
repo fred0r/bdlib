@@ -27,6 +27,7 @@
  */
 #include "Stream.h"
 #include <algorithm> // min() / max()
+#include <cstdint>
 
 #ifdef HAVE_MMAP
 #  include <sys/mman.h>
@@ -47,47 +48,51 @@ void Stream::reserve(const size_t newSize) const {
 }
 
 int Stream::seek(int offset, int whence) {
-  int newpos;
+  int64_t newpos;
 
   switch (whence) {
     case SEEK_SET:
       newpos = offset;
       break;
     case SEEK_CUR:
-      newpos = tell() + offset;
+      newpos = static_cast<int64_t>(tell()) + offset;
       break;
     case SEEK_END:
-      newpos = capacity() - offset;
+      newpos = static_cast<int64_t>(length()) - offset;
       break;
     default:
       newpos = tell();
   }
   if (newpos < 0)
     newpos = 0;
-  else if (static_cast<size_t>(newpos) > capacity())
-    newpos = capacity();
-  pos = newpos;
+  else if (static_cast<size_t>(newpos) > length())
+    newpos = length();
+  pos = static_cast<size_t>(newpos);
 
-  return newpos;
+  return static_cast<int>(pos);
 }
 
 String Stream::read(size_t maxSize, char delim) {
-  size_t toRead = std::min(maxSize, length() - pos);
+  if (pos >= length()) {
+    pos = length();
+    return String();
+  }
 
-  /* No need to split the string, return a substring */
+  const size_t start = pos;
+  const size_t limit = std::min(maxSize, length() - pos);
+  const size_t end = start + limit;
+
   if (!delim) {
-    String ret(str(pos, toRead));
-    pos += toRead;
+    String ret(str(start, limit));
+    pos = end;
     return ret;
   }
 
-  /* Must reconstruct a new string */
-  String ret(toRead);
+  while (pos < end && str[pos] != delim)
+    ++pos;
 
-  while ((ret.length() < toRead) && (str[pos] != delim)) {
-    ret += str[pos++];
-  }
-  if (str.size() > pos && str[pos] == delim) {
+  String ret(str(start, pos - start));
+  if (pos < end && str[pos] == delim) {
     ret += delim;
     ++pos;
   }
@@ -112,6 +117,10 @@ int Stream::loadFile(const int fd)
   ssize_t size = lseek(fd, 0, SEEK_END);
   if (size < 0) {
     return 1;
+  }
+  if (size == 0) {
+    loading = 0;
+    return 0;
   }
   reserve(size);
   void* map = mmap(0, size, PROT_READ, MAP_PRIVATE, fd, 0);

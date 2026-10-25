@@ -92,7 +92,11 @@ class Stream {
         /**
          * @brief Truncates the stream at the current position.
         */
-        void truncate() { str = str(0, pos); };
+        void truncate() {
+          if (pos > length())
+            pos = length();
+          str = str(0, pos);
+        };
 
         String peek() { return str(pos); };
 

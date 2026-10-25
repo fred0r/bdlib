@@ -90,7 +90,7 @@ void StreamTest :: seekTest (void)
   CPPUNIT_ASSERT_EQUAL((size_t) 0, a->tell());
 
   b->seek(0, SEEK_END);
-  CPPUNIT_ASSERT_EQUAL(b->capacity(), b->tell());
+  CPPUNIT_ASSERT_EQUAL(b->length(), b->tell());
 
   b->seek(0, SEEK_SET);
   CPPUNIT_ASSERT_EQUAL((size_t) 0, b->tell());
@@ -99,8 +99,17 @@ void StreamTest :: seekTest (void)
   CPPUNIT_ASSERT_EQUAL((size_t) 1, b->tell());
 
   b->seek(1, SEEK_END);
-  CPPUNIT_ASSERT_EQUAL(b->capacity() - 1, b->tell());
+  CPPUNIT_ASSERT_EQUAL(b->length() - 1, b->tell());
 
+  b->seek(100, SEEK_SET);
+  CPPUNIT_ASSERT_EQUAL(b->length(), b->tell());
+
+  b->seek(-1, SEEK_SET);
+  CPPUNIT_ASSERT_EQUAL((size_t) 0, b->tell());
+
+  b->seek(0, SEEK_END);
+  b->seek(-5, SEEK_CUR);
+  CPPUNIT_ASSERT_EQUAL((size_t) 0, b->tell());
 }
 
 void StreamTest :: putsTest (void)
@@ -191,6 +200,15 @@ void StreamTest :: readTest (void)
   CPPUNIT_ASSERT_EQUAL(pos, a->tell());
   CPPUNIT_ASSERT_EQUAL((size_t) 15, gbuf.length());
   CPPUNIT_ASSERT_STRING_EQUAL(gbuf, sbuf);
+
+  gbuf = a->read(30);
+  CPPUNIT_ASSERT_EQUAL((size_t) 0, gbuf.length());
+  CPPUNIT_ASSERT_EQUAL(a->length(), a->tell());
+
+  a->seek(a->length() + 100, SEEK_SET);
+  gbuf = a->getline();
+  CPPUNIT_ASSERT_EQUAL((size_t) 0, gbuf.length());
+  CPPUNIT_ASSERT_EQUAL(a->length(), a->tell());
 }
 
 void StreamTest :: getlineTest (void)
