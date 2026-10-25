@@ -40,6 +40,7 @@ class AtomicFileTest : public CPPUNIT_NS :: TestFixture
     CPPUNIT_TEST (absoluteTest);
     CPPUNIT_TEST (abortTest);
     CPPUNIT_TEST (deleteTest);
+    CPPUNIT_TEST (commitFailureTest);
     CPPUNIT_TEST_SUITE_END ();
 
     public:
@@ -51,6 +52,7 @@ class AtomicFileTest : public CPPUNIT_NS :: TestFixture
         void absoluteTest(void);
         void abortTest(void);
         void deleteTest(void);
+        void commitFailureTest(void);
 
     private:
         String *source = nullptr;

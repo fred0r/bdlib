@@ -307,4 +307,27 @@ void AtomicFileTest :: deleteTest (void)
   fclose(f2);		/* The junk file kept open */
   unlink(dst_name);
 }
+
+void AtomicFileTest :: commitFailureTest (void)
+{
+  const char *dst_name = "test.commit-failure";
+  AtomicFile *a = new AtomicFile;
+
+  unlink(dst_name);
+  CPPUNIT_ASSERT(a->open(dst_name));
+  CPPUNIT_ASSERT(a->is_open());
+
+  /* Force commit to fail by closing the descriptor behind AtomicFile. */
+  const int fd = a->fd();
+  CPPUNIT_ASSERT(fd != -1);
+  CPPUNIT_ASSERT_EQUAL(0, ::close(fd));
+
+  CPPUNIT_ASSERT(!a->commit());
+  CPPUNIT_ASSERT(!a->is_open());
+  CPPUNIT_ASSERT(!a->commit());
+
+  unlink(dst_name);
+  delete a;
+}
+
 /* vim: set sts=2 sw=2 ts=8 et: */

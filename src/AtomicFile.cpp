@@ -74,10 +74,12 @@ bool AtomicFile::abort() {
 }
 
 bool AtomicFile::commit() {
-  bool result, remove_temp;
+  bool result = false;
+  bool remove_temp = true;
 
-  result = false;
-  remove_temp = true;
+  if (!is_open()) {
+    return false;
+  }
   if (_mode != mode_t(-1) && fchmod(_fd, _mode) != 0) {
     goto cleanup;
   }
@@ -85,8 +87,10 @@ bool AtomicFile::commit() {
     goto cleanup;
   }
   if (::close(_fd) != 0) {
+    _fd = -1;
     goto cleanup;
   }
+  _fd = -1;
   if (std::rename(_tmpname.c_str(), _fname.c_str()) != 0) {
     goto cleanup;
   }
@@ -95,10 +99,13 @@ bool AtomicFile::commit() {
   result = true;
 
 cleanup:
+  if (_fd != -1) {
+    ::close(_fd);
+    _fd = -1;
+  }
   if (remove_temp) {
     ::unlink(_tmpname.c_str());
   }
-  _fd = -1;
   return result;
 }
 BDLIB_NS_END
