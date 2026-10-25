@@ -72,6 +72,9 @@ class String : public ReferenceCountedArray<String_Array_Type> {
           const size_t len = capacity();
           char* ptr = const_cast<char*>(real_begin()); //real_begin() will ignore offset.
 
+          if (!ptr || !len)
+            return;
+
           unsigned char *p = reinterpret_cast<unsigned char *>(ptr);
           size_t loop = len;
           while(loop--)
