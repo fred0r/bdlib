@@ -21,9 +21,6 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define if you have support for libtcl */
-#undef HAVE_LIBTCL
-
 /* Define to 1 if you have the 'memmem' function. */
 #undef HAVE_MEMMEM
 
@@ -98,9 +95,6 @@
    backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
 
-/* Define if you want TCL Script support */
-#undef USE_SCRIPT_TCL
-
 /* Version number of package */
 #undef VERSION
 
@@ -125,5 +119,3 @@
 /* Define to empty if the keyword 'volatile' does not work. Warning: valid
    code using 'volatile' can become incorrect without. Disable with care. */
 #undef volatile
-
-#include "config-sanity.h"
