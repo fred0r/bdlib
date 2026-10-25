@@ -33,6 +33,7 @@
 #include "String.h"
 
 #include <functional>
+#include <limits>
 
 #ifdef CPPUNIT_VERSION
 #include <cppunit/SourceLine.h>
@@ -152,14 +153,28 @@ class Array : public ReferenceCountedArray<T> {
      */
     String join(const String& delim, bool quoted = false) const {
       if (!this->length()) return String();
+
+      const size_t max_size = std::numeric_limits<size_t>::max();
+      const size_t len = this->length();
       size_t str_size = 0, i;
 
       // Preallocate a fully sized String to avoid frequent resizing
-      str_size += (this->length() * delim.length()) - 1;
-      if (quoted)
-	str_size += this->length() * 2;
-      for (i = 0; i < this->length(); ++i)
-	str_size += this->constBuf(i)->length();
+      if (len > 1) {
+        if (delim.length() && (len - 1) > max_size / delim.length())
+          return String();
+        str_size += (len - 1) * delim.length();
+      }
+      if (quoted) {
+        if (len > max_size / 2)
+          return String();
+        str_size += len * 2;
+      }
+      for (i = 0; i < len; ++i) {
+        const size_t item_len = this->constBuf(i)->length();
+        if (item_len > max_size - str_size)
+          return String();
+        str_size += item_len;
+      }
 
       String str(str_size);
 

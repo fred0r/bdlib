@@ -259,6 +259,10 @@ void ArrayTest :: joinTest(void)
   str_a->push_back("Test2");
   str_a->push_back("Test3");
   CPPUNIT_ASSERT_STRING_EQUAL("Test1 Test2 Test3", str_a->join(' '));
+  CPPUNIT_ASSERT_STRING_EQUAL("Test1", Array<String>({"Test1"}).join(""));
+  CPPUNIT_ASSERT_STRING_EQUAL("", Array<String>().join(""));
+  CPPUNIT_ASSERT_STRING_EQUAL("Test1|Test2|Test3",
+      Array<String>({"Test1", "Test2", "Test3"}).join("|"));
   CPPUNIT_ASSERT_EQUAL(size_t(3), str_a->size());
   CPPUNIT_ASSERT_STRING_EQUAL("Test3", str_a->pop());
   CPPUNIT_ASSERT_STRING_EQUAL("Test2", str_a->pop());
