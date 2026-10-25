@@ -90,6 +90,20 @@ class Stream {
         }
 
         /**
+         * @brief Return the number of bytes left before the logical end.
+         */
+        size_t remaining() const __attribute__((pure)) {
+          return length() - std::min(pos, length());
+        }
+
+        /**
+         * @brief Whether the stream position is at or past the logical end.
+         */
+        bool eof() const __attribute__((pure)) {
+          return pos >= length();
+        }
+
+        /**
          * @brief Truncates the stream at the current position.
         */
         void truncate() {

@@ -101,6 +101,18 @@ void StreamTest :: seekTest (void)
   b->seek(1, SEEK_END);
   CPPUNIT_ASSERT_EQUAL(b->length() - 1, b->tell());
 
+  b->seek(0, SEEK_SET);
+  CPPUNIT_ASSERT_EQUAL(b->length(), b->remaining());
+  CPPUNIT_ASSERT(!b->eof());
+
+  b->seek(b->length(), SEEK_SET);
+  CPPUNIT_ASSERT_EQUAL((size_t) 0, b->remaining());
+  CPPUNIT_ASSERT(b->eof());
+
+  b->seek(b->length() + 100, SEEK_SET);
+  CPPUNIT_ASSERT_EQUAL((size_t) 0, b->remaining());
+  CPPUNIT_ASSERT(b->eof());
+
   b->seek(100, SEEK_SET);
   CPPUNIT_ASSERT_EQUAL(b->length(), b->tell());
 
