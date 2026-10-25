@@ -1389,6 +1389,18 @@ void StringTest :: base64Test(void)
   /* Empty input is valid and yields empty output. */
   CPPUNIT_ASSERT(base64Decode("", checked, true));
   CPPUNIT_ASSERT_EQUAL((size_t) 0, checked.length());
+
+  String encoded;
+  CPPUNIT_ASSERT(base64Encode("b", encoded));
+  CPPUNIT_ASSERT_STRING_EQUAL("Yg==", encoded);
+  CPPUNIT_ASSERT(base64Encode("blah", encoded));
+  CPPUNIT_ASSERT_STRING_EQUAL("YmxhaA==", encoded);
+  CPPUNIT_ASSERT(base64Encode("", encoded));
+  CPPUNIT_ASSERT_EQUAL((size_t) 0, encoded.length());
+  CPPUNIT_ASSERT(base64Encode("blah", encoded, nullptr));
+  CPPUNIT_ASSERT_STRING_EQUAL("YmxhaA==", encoded);
+  CPPUNIT_ASSERT(!base64Encode("blah", encoded, "short"));
+  CPPUNIT_ASSERT_EQUAL((size_t) 0, encoded.length());
 }
 
 #ifdef DISABLED

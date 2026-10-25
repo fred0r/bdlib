@@ -75,6 +75,16 @@ char *b64enc(const unsigned char *src, size_t *len, const char* charset = nullpt
 String base64Encode(const String& string, const char* charset = nullptr);
 
 /**
+ * @brief Encode base64 into a caller-provided String with a status result.
+ * @param string The plaintext input.
+ * @param output The encoded output; empty on failure.
+ * @param charset Optional custom 64-character alphabet.
+ * @return true on success, false on invalid charset or size overflow.
+ */
+bool base64Encode(const String& string, String& output,
+    const char* charset = nullptr);
+
+/**
   * @brief Encode a plaintext string into base64 (using a given buffer)
   * @param data The c-style string to encode
   * @param len Reference to length of string (to be updated on return)

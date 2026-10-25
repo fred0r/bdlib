@@ -102,19 +102,75 @@ void b64enc_buf(const unsigned char *data, size_t *len, char *dest, const char* 
   *len = buf - dest;
 }
 
+static bool valid_encode_charset(const char* charset)
+{
+  if (!charset)
+    return true;
+  if (strlen(charset) != 64)
+    return false;
+
+  bool seen[256] = {false};
+  for (size_t i = 0; i < 64; ++i) {
+    const unsigned char ch = static_cast<unsigned char>(charset[i]);
+    if (ch == PADDING_CHAR || seen[ch])
+      return false;
+    seen[ch] = true;
+  }
+  return true;
+}
+
 String base64Encode(const String& string, const char* charset) {
   size_t len = string.length();
   char *p = b64enc(reinterpret_cast<const unsigned char*>(string.cbegin()), &len, charset);
+  if (!p)
+    return String();
   BDLIB_NS::String encoded(p, len);
   free(p);
   return encoded;
 }
 
+bool base64Encode(const String& string, String& output, const char* charset)
+{
+  const size_t max_size = std::numeric_limits<size_t>::max();
+  const size_t len = string.length();
+  const size_t groups = (len / NUM_ASCII_BYTES) + ((len % NUM_ASCII_BYTES) ? 1 : 0);
+
+  output = String();
+
+  if (!valid_encode_charset(charset) || groups > max_size / NUM_ENCODED_BYTES)
+    return false;
+
+  const size_t dlen = groups * NUM_ENCODED_BYTES;
+  std::vector<char> buf(dlen + 1);
+  size_t outlen = len;
+
+  b64enc_buf(reinterpret_cast<const unsigned char*>(string.cbegin()),
+             &outlen, buf.data(), charset);
+
+  if (outlen != dlen)
+    return false;
+
+  buf[outlen] = '\0';
+  output = String(buf.data(), outlen);
+  return true;
+}
+
 char *b64enc(const unsigned char *src, size_t *len, const char* charset)
 {
-  /* Take the length and round up the next 4-byte boundary */
-  size_t dlen = (((*len + (NUM_ASCII_BYTES - 1)) / NUM_ASCII_BYTES) * NUM_ENCODED_BYTES);
+  const size_t max_size = std::numeric_limits<size_t>::max();
+  const size_t groups = (*len / NUM_ASCII_BYTES) + ((*len % NUM_ASCII_BYTES) ? 1 : 0);
+
+  if (groups > max_size / NUM_ENCODED_BYTES) {
+    *len = 0;
+    return nullptr;
+  }
+
+  size_t dlen = groups * NUM_ENCODED_BYTES;
   char *dest = static_cast<char*>(malloc(dlen + 1));
+  if (!dest) {
+    *len = 0;
+    return nullptr;
+  }
 
   b64enc_buf(src, len, dest, charset);
   dest[*len] = '\0';
@@ -269,7 +325,8 @@ bool base64Decode(const String& string, String& output, bool strict, const char*
     return false;
   }
 
-  std::vector<char> buf(groups * NUM_ASCII_BYTES + 1);
+  String decoded;
+  decoded.resize(groups * NUM_ASCII_BYTES);
   size_t outlen = 0;
   char custom_index[256];
   const char *index = b64_indexes;
@@ -283,13 +340,13 @@ bool base64Decode(const String& string, String& output, bool strict, const char*
   }
 
   if (!b64_decode_indexed(reinterpret_cast<const unsigned char*>(string.cbegin()),
-                          len, buf.data(), outlen, index, strict)) {
+                          len, decoded.mdata(), outlen, index, strict)) {
     output = String();
     return false;
   }
 
-  buf[outlen] = '\0';
-  output = String(buf.data(), outlen);
+  decoded.resize(outlen);
+  output = decoded;
   return true;
 }
 
