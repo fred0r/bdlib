@@ -43,6 +43,7 @@ class HashTableTest : public CPPUNIT_NS :: TestFixture
     CPPUNIT_TEST (clearTest);
 //    CPPUNIT_TEST (getKeyTest);
     CPPUNIT_TEST (getValueTest);
+    CPPUNIT_TEST (tryGetTest);
     CPPUNIT_TEST (removeTest);
 //    CPPUNIT_TEST (iterateTest);
     CPPUNIT_TEST (initializerTest);
@@ -60,6 +61,7 @@ class HashTableTest : public CPPUNIT_NS :: TestFixture
         void clearTest(void);
 //        void getKeyTest(void);
         void getValueTest(void);
+        void tryGetTest(void);
         void removeTest(void);
 //        void iterateTest(void);
         void initializerTest(void);

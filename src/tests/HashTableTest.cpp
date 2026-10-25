@@ -446,4 +446,27 @@ void HashTableTest :: iteratorTest (void)
   CPPUNIT_ASSERT_EQUAL(4, i);
 }
 
+
+void HashTableTest :: tryGetTest(void)
+{
+  a->insert(1, "Blah1");
+  a->insert(2, "Blah2");
+
+  CPPUNIT_ASSERT_EQUAL(a->bucket_count(), a->capacity());
+  CPPUNIT_ASSERT(a->bucket_count() > 0);
+
+  const String *value = a->try_get(1);
+  CPPUNIT_ASSERT(value != nullptr);
+  CPPUNIT_ASSERT_STRING_EQUAL("Blah1", *value);
+
+  value = a->try_get(2);
+  CPPUNIT_ASSERT(value != nullptr);
+  CPPUNIT_ASSERT_STRING_EQUAL("Blah2", *value);
+
+  CPPUNIT_ASSERT(a->try_get(3) == nullptr);
+
+  a->reserve(100);
+  CPPUNIT_ASSERT(a->bucket_count() >= 100);
+}
+
 /* vim: set sts=2 sw=2 ts=8 et: */

@@ -125,8 +125,14 @@ class HashTable {
     inline size_t size() const noexcept __attribute__((pure)) {
       return map.size();
     }
+    inline size_t bucket_count() const noexcept __attribute__((pure)) {
+      return map.bucket_count();
+    }
     inline size_t capacity() const noexcept __attribute__((pure)) {
-      return map.max_size();
+      return bucket_count();
+    }
+    inline void reserve(size_t count) {
+      map.reserve(count);
     }
     inline bool isEmpty() const noexcept __attribute__((pure)) {
       return map.empty();
@@ -174,6 +180,17 @@ class HashTable {
       if (result == std::end(map))
         return Value();
       return result->second;
+    };
+
+    /**
+     * @brief Return a pointer to a value, or nullptr when absent.
+     * @note References remain valid across rehash; do not use after erase.
+     */
+    inline const Value* try_get(const Key& key) const noexcept {
+      auto result = map.find(key);
+      if (result == std::end(map))
+        return nullptr;
+      return &result->second;
     };
 
     /**
