@@ -26,6 +26,7 @@
  *
  */
 #include <cctype>
+#include <cstdarg>
 #include "StringTest.h"
 #include "Array.h"
 #include "HashTable.h"
@@ -39,6 +40,15 @@
 #include <unistd.h>
 #include <type_traits>
 using namespace std;
+
+static String test_vprintf(const char *format, ...)
+{
+  va_list ap;
+  va_start(ap, format);
+  String result = String::vprintf(format, ap);
+  va_end(ap);
+  return result;
+}
 
 CPPUNIT_TEST_SUITE_REGISTRATION (StringTest);
 
@@ -665,6 +675,9 @@ void StringTest :: replaceTest(void)
   CPPUNIT_ASSERT_STRING_EQUAL("1 2 3", *a);
   CPPUNIT_ASSERT_STRING_EQUAL("1, 2, 3", *b);
 
+  *b = a->sub("", ",");
+  CPPUNIT_ASSERT_STRING_EQUAL("1 2 3", *b);
+
   *a = "1 2 3";
   *b = a->sub(" ", ",");
   CPPUNIT_ASSERT_STRING_EQUAL("1 2 3", *a);
@@ -1209,6 +1222,14 @@ void StringTest :: printfTest(void)
     CPPUNIT_ASSERT_EQUAL(len, result.length());
     CPPUNIT_ASSERT_EQUAL(0, std::memcmp(result.c_str(), input.data(), len));
   }
+
+  CPPUNIT_ASSERT_STRING_EQUAL("something 506", test_vprintf("%s %d", s, n));
+
+  String secret("secret-value");
+  String shared(secret);
+  secret.wipe();
+  CPPUNIT_ASSERT_EQUAL((size_t) 0, secret.length());
+  CPPUNIT_ASSERT_STRING_EQUAL("secret-value", shared);
 }
 
 /*
@@ -2000,6 +2021,13 @@ void StringTest :: splitTest(void)
   CPPUNIT_ASSERT_EQUAL(size_t(0), list.length());
   CPPUNIT_ASSERT_STRING_EQUAL("1--2--3--4", (*a));
 
+  (*a) = "abc";
+  list = a->split("");
+  CPPUNIT_ASSERT_EQUAL(size_t(1), list.length());
+  CPPUNIT_ASSERT_STRING_EQUAL("abc", list.pop());
+
+  list = a->split(',', 0);
+  CPPUNIT_ASSERT_EQUAL(size_t(0), list.length());
 }
 
 void StringTest :: hashTest(void)

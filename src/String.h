@@ -152,6 +152,15 @@ class String : public ReferenceCountedArray<String_Array_Type> {
           }
         }
 
+        /**
+         * @brief Clear the string and wipe its owned buffer.
+         * @post length() == 0. Other references are not affected.
+         */
+        void wipe() {
+          clear();
+          cleanse();
+        }
+
         using ReferenceCountedArray<String_Array_Type, Allocator>::operator=;
         String& operator=(const String& string) noexcept = default;
         String& operator=(String&& string) noexcept = default;
@@ -420,6 +429,7 @@ class String : public ReferenceCountedArray<String_Array_Type> {
 #else
 	static String printf(const char*, ...);
 #endif
+        static String vprintf(const char*, va_list);
         /* Operators */
 
         /**

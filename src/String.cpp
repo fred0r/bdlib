@@ -28,6 +28,7 @@
 #include "String.h"
 #include "Array.h"
 #include "HashTable.h"
+#include <cctype>
 #include <cstdarg>
 #include <cstdio>
 #include <vector>
@@ -191,8 +192,11 @@ std::istream& getline(std::istream& is, String& string) {
  * @note Excess whitespace is trimmed similar to Ruby's split.
  */
 Array<String> String::split(const String& delim, size_t limit) const {
-  if (!length()) return Array<String>();
+  if (!length() || limit == 0) return Array<String>();
   if (limit == 1) {
+    return Array<String>({*this});
+  }
+  if (!delim.length()) {
     return Array<String>({*this});
   }
 
@@ -243,15 +247,13 @@ String String::operator*(int times) const {
   return newString;
 }
 
-String String::printf(const char* format, ...) {
+String String::vprintf(const char* format, va_list ap) {
   char va_out[512] = "";
-  va_list va, vacopy;
+  va_list vacopy;
   int len = 0;
 
-  va_start(va, format);
-  va_copy(vacopy, va);
-  len = vsnprintf(va_out, sizeof(va_out), format, va);
-  va_end(va);
+  va_copy(vacopy, ap);
+  len = vsnprintf(va_out, sizeof(va_out), format, ap);
 
   if (len < 0) {
     va_end(vacopy);
@@ -273,6 +275,16 @@ String String::printf(const char* format, ...) {
   return String(buf.data(), static_cast<size_t>(written));
 }
 
+String String::printf(const char* format, ...) {
+  va_list ap;
+
+  va_start(ap, format);
+  String output = vprintf(format, ap);
+  va_end(ap);
+
+  return output;
+}
+
 String& String::chomp() noexcept {
   if (length() && (*this)[length() - 1] == '\n') --(*this);
   if (length() && (*this)[length() - 1] == '\r') --(*this);
@@ -281,9 +293,9 @@ String& String::chomp() noexcept {
 
 String& String::trim() noexcept {
   // ltrim
-  while (length() && isspace((*this)[0])) { ++offset; subLength(1); }
+  while (length() && std::isspace(static_cast<unsigned char>((*this)[0]))) { ++offset; subLength(1); }
   // rtrim
-  while (length() && isspace((*this)[length() - 1])) subLength(1);
+  while (length() && std::isspace(static_cast<unsigned char>((*this)[length() - 1]))) subLength(1);
   return *this;
 }
 
@@ -309,17 +321,22 @@ size_t String::_find(const String& str, size_t pos) const noexcept {
 #endif
 }
 
+static inline char ascii_upper(char ch)
+{
+  return static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
+}
+
 size_t String::ifind(const String& str) const {
   String str_upper(str.length()), this_upper(length());
-  std::transform(str.cbegin(), str.cend(), std::back_inserter(str_upper), ::toupper);
-  std::transform(this->cbegin(), this->cend(), std::back_inserter(this_upper), ::toupper);
+  std::transform(str.cbegin(), str.cend(), std::back_inserter(str_upper), ascii_upper);
+  std::transform(this->cbegin(), this->cend(), std::back_inserter(this_upper), ascii_upper);
   return this_upper.find(str_upper);
 }
 
 size_t String::rifind(const String& str, const size_t lpos) const {
   String str_upper(str.length()), this_upper(length());
-  std::transform(str.cbegin(), str.cend(), std::back_inserter(str_upper), ::toupper);
-  std::transform(this->cbegin(), this->cend(), std::back_inserter(this_upper), ::toupper);
+  std::transform(str.cbegin(), str.cend(), std::back_inserter(str_upper), ascii_upper);
+  std::transform(this->cbegin(), this->cend(), std::back_inserter(this_upper), ascii_upper);
   return this_upper.rfind(str_upper);
 }
 
@@ -337,6 +354,9 @@ size_t String::rfind(const String& str, const size_t lpos) const noexcept {
 }
 
 String String::sub(const String& search, const String& replacement, int limit) const {
+  if (!search.length())
+    return *this;
+
   String newStr(length()), search_str(*this);
   size_type pos = 0;
   auto cnt = 0;
