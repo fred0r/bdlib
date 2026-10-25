@@ -27,6 +27,8 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <limits>
+#include <vector>
 #include "base64.h"
 #include "String.h"
 
@@ -119,48 +121,132 @@ char *b64enc(const unsigned char *src, size_t *len, const char* charset)
   return dest;
 }
 
+static bool b64_decode_indexed(const unsigned char *data, size_t len,
+    char *dest, size_t& outlen, const char* charset_index, bool strict)
+{
+  outlen = 0;
+
+  if (!data && len)
+    return false;
+
+  if (strict && (len % NUM_ENCODED_BYTES) != 0)
+    return false;
+
+  if (!strict && (len % NUM_ENCODED_BYTES) == 1)
+    return false;
+
+  if (!charset_index)
+    charset_index = b64_indexes;
+
+  for (size_t i = 0; i < len; i += NUM_ENCODED_BYTES) {
+    const size_t qlen = std::min<size_t>(NUM_ENCODED_BYTES, len - i);
+    unsigned char c[4] = {0, 0, 0, 0};
+    unsigned int pads = 0;
+
+    if (qlen == 1)
+      return false;
+
+    for (size_t j = 0; j < NUM_ENCODED_BYTES; ++j) {
+      if (i + j >= len) {
+        if (strict)
+          return false;
+        continue;
+      }
+
+      const unsigned char ch = data[i + j];
+      if (ch == PADDING_CHAR) {
+        if (qlen != NUM_ENCODED_BYTES || j < 2)
+          return false;
+        if (j == 2 && (i + 3 >= len || data[i + 3] != PADDING_CHAR))
+          return false;
+        ++pads;
+        continue;
+      }
+
+      if (pads)
+        return false;
+
+      const signed char value = static_cast<signed char>(charset_index[ch]);
+      if (value < 0)
+        return false;
+      c[j] = static_cast<unsigned char>(value);
+    }
+
+    if (pads > 2)
+      return false;
+
+    if (qlen >= 2)
+      dest[outlen++] = static_cast<char>((c[0] << 2) | (c[1] >> 4));
+    if (qlen >= 3 && pads < 2)
+      dest[outlen++] = static_cast<char>(((c[1] & 0x0f) << 4) | (c[2] >> 2));
+    if (qlen == NUM_ENCODED_BYTES && pads == 0)
+      dest[outlen++] = static_cast<char>(((c[2] & 0x03) << 6) | c[3]);
+  }
+
+  return true;
+}
+
+static bool make_charset_index(const char* charset, char *charset_index)
+{
+  if (!charset || strlen(charset) < 64)
+    return false;
+
+  memset(charset_index, -1, 256);
+  for (size_t i = 0; i < 64; ++i) {
+    const unsigned char ch = static_cast<unsigned char>(charset[i]);
+    if (static_cast<signed char>(charset_index[ch]) >= 0)
+      return false;
+    charset_index[ch] = static_cast<char>(i);
+  }
+  return true;
+}
+
 void b64dec_buf(const unsigned char *data, size_t *len, char *dest, const char* charset_index)
 {
-  char *buf = dest;
-  size_t blocks = (*len / NUM_ENCODED_BYTES) + ((*len % NUM_ENCODED_BYTES) ? 1 : 0);
+  size_t outlen = 0;
 
-  if (!charset_index) {
-    charset_index = b64_indexes;
+  if (!b64_decode_indexed(data, *len, dest, outlen, charset_index, false)) {
+    *len = 0;
+    if (dest)
+      dest[0] = '\0';
+    return;
   }
 
-  /* Convert the encoded base64 character back into our base255 ASCII character */
-  while (blocks > 0) {
-    /* buf[0] is the 6 bits from data[0] + left-most 2 bits of data[1] */
-    *buf++ = (charset_index[data[0]] << 2) + ((charset_index[data[1]] & 0x30) >> 4);  /* 0x30 not required but to be clear. */
-    if (data[2] != PADDING_CHAR) {
-      /* buf[1] is the right-most 4 bits of data[1] + left-most 4 bits of data[2] */
-      *buf++ = ((charset_index[data[1]] & 0x0f) << 4) + ((charset_index[data[2]] & 0x3c) >> 2);
-      if (data[3] != PADDING_CHAR) {
-        /* buf[2] is the right-most 2 bits of data[2] + data[3] */
-        *buf++ = ((charset_index[data[2]] & 0x03) << 6) + charset_index[data[3]];
-      }
-    }
-    data += NUM_ENCODED_BYTES;
-    --blocks;
-  }
-
-  *len = (buf - dest);
+  *len = outlen;
 }
 
 char *b64dec(const unsigned char *data, size_t *len, const char* charset)
 {
-  size_t dlen = ((*len / NUM_ENCODED_BYTES) + ((*len % NUM_ENCODED_BYTES) ? 1 : 0)) * NUM_ASCII_BYTES;
-  char *dest = static_cast<char*>(malloc(dlen + 1));
+  const size_t max_size = std::numeric_limits<size_t>::max();
+  const size_t groups = (*len / NUM_ENCODED_BYTES) + ((*len % NUM_ENCODED_BYTES) ? 1 : 0);
+
+  if (groups > max_size / NUM_ASCII_BYTES) {
+    *len = 0;
+    char *empty = static_cast<char*>(calloc(1, 1));
+    return empty;
+  }
+
+  const size_t dlen = groups * NUM_ASCII_BYTES;
+  char *dest = static_cast<char*>(calloc(1, dlen + 1));
+  size_t outlen = 0;
+  char custom_index[256];
+  const char *index = b64_indexes;
 
   if (charset) {
-    char charset_index[256];
-    memset(charset_index, -1, sizeof(charset_index));
-    for (size_t i = 0; i < 64; ++i)
-      charset_index[int(charset[i])] = i;
-    b64dec_buf(data, len, dest, charset_index);
-  }  else
-    b64dec_buf(data, len, dest);
-  dest[*len] = '\0';
+    if (!make_charset_index(charset, custom_index)) {
+      *len = 0;
+      return dest;
+    }
+    index = custom_index;
+  }
+
+  if (!b64_decode_indexed(data, *len, dest, outlen, index, false)) {
+    *len = 0;
+    return dest;
+  }
+
+  dest[outlen] = '\0';
+  *len = outlen;
   return dest;
 }
 
@@ -170,6 +256,41 @@ String base64Decode(const String& string, const char* charset) {
   BDLIB_NS::String decoded(p, len);
   free(p);
   return decoded;
+}
+
+bool base64Decode(const String& string, String& output, bool strict, const char* charset)
+{
+  const size_t max_size = std::numeric_limits<size_t>::max();
+  const size_t len = string.length();
+  const size_t groups = (len / NUM_ENCODED_BYTES) + ((len % NUM_ENCODED_BYTES) ? 1 : 0);
+
+  if (groups > max_size / NUM_ASCII_BYTES) {
+    output = String();
+    return false;
+  }
+
+  std::vector<char> buf(groups * NUM_ASCII_BYTES + 1);
+  size_t outlen = 0;
+  char custom_index[256];
+  const char *index = b64_indexes;
+
+  if (charset) {
+    if (!make_charset_index(charset, custom_index)) {
+      output = String();
+      return false;
+    }
+    index = custom_index;
+  }
+
+  if (!b64_decode_indexed(reinterpret_cast<const unsigned char*>(string.cbegin()),
+                          len, buf.data(), outlen, index, strict)) {
+    output = String();
+    return false;
+  }
+
+  buf[outlen] = '\0';
+  output = String(buf.data(), outlen);
+  return true;
 }
 
 BDLIB_NS_END

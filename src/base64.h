@@ -101,6 +101,17 @@ char *b64dec(const unsigned char *data, size_t *len, const char* charset = nullp
 String base64Decode(const String& string, const char* charset = nullptr);
 
 /**
+ * @brief Decode base64 into a caller-provided String with a status result.
+ * @param string The encoded input.
+ * @param output The decoded output; empty on failure.
+ * @param strict Require canonical length, alphabet and padding.
+ * @param charset Optional custom 64-character alphabet.
+ * @return true on success, false on malformed input.
+ */
+bool base64Decode(const String& string, String& output, bool strict = true,
+    const char* charset = nullptr);
+
+/**
   * @brief Decode a base64 encoded string into plaintext (using a given buffer)
   * @param data The c-style string to decode
   * @param len Reference to length of string (to be updated on return)

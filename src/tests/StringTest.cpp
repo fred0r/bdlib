@@ -1341,6 +1341,33 @@ void StringTest :: base64Test(void)
     CPPUNIT_ASSERT_STRING_EQUAL(*a, *c);
   }
   close(fd);
+
+  /* Unpadded input remains accepted by the compatibility decoder. */
+  CPPUNIT_ASSERT_STRING_EQUAL("b", base64Decode("Yg"));
+  CPPUNIT_ASSERT_STRING_EQUAL("bl", base64Decode("Ymw"));
+  CPPUNIT_ASSERT_STRING_EQUAL("bla", base64Decode("Ymxh"));
+
+  /* Strict decoding requires canonical padding. */
+  String checked;
+  CPPUNIT_ASSERT(base64Decode("Yg==", checked, true));
+  CPPUNIT_ASSERT_STRING_EQUAL("b", checked);
+  CPPUNIT_ASSERT(base64Decode("Ymxh", checked, true));
+  CPPUNIT_ASSERT_STRING_EQUAL("bla", checked);
+  CPPUNIT_ASSERT(!base64Decode("Yg", checked, true));
+  CPPUNIT_ASSERT_EQUAL((size_t) 0, checked.length());
+
+  /* Malformed input fails closed instead of decoding garbage. */
+  const char *invalid[] = {"A", "!!!!", "AA=A", "A===", "AA===", "===="};
+  for (const char *bad : invalid) {
+    checked = "not-empty";
+    CPPUNIT_ASSERT(!base64Decode(bad, checked, true));
+    CPPUNIT_ASSERT_EQUAL((size_t) 0, checked.length());
+    CPPUNIT_ASSERT_EQUAL((size_t) 0, base64Decode(bad).length());
+  }
+
+  /* Empty input is valid and yields empty output. */
+  CPPUNIT_ASSERT(base64Decode("", checked, true));
+  CPPUNIT_ASSERT_EQUAL((size_t) 0, checked.length());
 }
 
 #ifdef DISABLED
